@@ -128,6 +128,9 @@ export const generateRoute = (routes: AppCustomRouteRecordRaw[]): AppRouteRecord
       redirect: route.redirect,
       meta: meta
     }
+    if (Number(route.parentId) === 0 && !isUrl(data.path) && !data.path.startsWith('/')) {
+      data.path = `/${data.path}`
+    }
     //处理顶级非目录路由
     if (!route.children && Number(route.parentId) === 0 && route.component) {
       data.component = Layout
@@ -156,7 +159,7 @@ export const generateRoute = (routes: AppCustomRouteRecordRaw[]): AppRouteRecord
       if (route.children?.length) {
         // 顶级目录承载后台整体框架；非顶级目录只作为 router-view 占位，避免多级菜单嵌套 Layout。
         data.component = Number(route.parentId) === 0 ? Layout : getParentLayout()
-        data.redirect = getRedirect(route.path, route.children)
+        data.redirect = getRedirect(data.path, route.children)
         // 外链
       } else if (isUrl(route.path)) {
         const externalPath = getExternalRoutePath(route.id, data.name)
