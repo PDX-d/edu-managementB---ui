@@ -91,6 +91,35 @@ export function formatNullableDate(
 }
 
 /**
+ * 将后端返回的日期归一化为 `YYYY-MM-DD` 字符串
+ *
+ * 背景：后端开启了 `spring.jackson.serialization.write-dates-as-timestamps`，
+ * LocalDate 字段（如学期起止日期）会被序列化成时间戳数组，例如 `[2026,10,1]`；
+ * 若前端按 `YYYY-MM-DD` 字符串直接拼接/比较，会得到 Invalid Date（表现为
+ * 「NaN 年 el.datepicker.monthInvalid Date」、el-calendar 整月不渲染、日期不可选）。
+ * 因此统一在拿到数据的第一时间归一化。
+ *
+ * @param value 后端返回的日期值，兼容：时间戳数组 [年,月,日]、毫秒时间戳、日期字符串
+ * @returns `YYYY-MM-DD` 字符串；无值或无法识别时返回空字符串
+ */
+export function toDayString(value?: unknown): string {
+  if (value === null || value === undefined || value === '') {
+    return ''
+  }
+  // 1. 时间戳数组：[年, 月, 日]
+  if (Array.isArray(value)) {
+    const [year, month, day] = value
+    if (!year || !month || !day) {
+      return ''
+    }
+    return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+  }
+  // 2. 毫秒时间戳 / 日期字符串，统一交给 dayjs 解析
+  const parsed = dayjs(value as dayjs.ConfigType)
+  return parsed.isValid() ? parsed.format('YYYY-MM-DD') : ''
+}
+
+/**
  * 获取当前的日期+时间
  */
 export function getNowDateTime() {

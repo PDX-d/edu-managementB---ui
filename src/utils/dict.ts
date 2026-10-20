@@ -443,5 +443,16 @@ export enum DICT_TYPE {
   IM_RTC_CALL_END_REASON = 'im_rtc_call_end_reason', // IM 通话结束原因：1=通话结束 / 2=已拒绝 / 3=已取消 / 4=无人接听 / 5=对方正忙 / 9=通话异常
   IM_RTC_PARTICIPANT_ROLE = 'im_rtc_participant_role', // IM 通话参与角色：1=发起人 / 2=被邀请者 / 3=主动加入者
   IM_RTC_PARTICIPANT_STATUS = 'im_rtc_participant_status', // IM 通话参与状态：10=邀请中 / 20=已加入 / 30=已拒绝 / 40=未应答 / 50=已离开
-  IM_CHANNEL_MATERIAL_TYPE = 'im_channel_material_type' // IM 频道素材内容类型：1=富文本 / 2=外链
+  IM_CHANNEL_MATERIAL_TYPE = 'im_channel_material_type', // IM 频道素材内容类型：1=富文本 / 2=外链
+
+  // ========== EDU - 学院管理模块 ==========
+  EDU_STUDENT_STATUS = 'edu_student_status', // 学生状态：0=在读 / 1=休学 / 2=退学 / 3=毕业 / 4=复学
+  EDU_STUDENT_CHANGE_TYPE = 'edu_student_change_type', // 学生变更类型：1=学籍状态变更 / 2=调班 / 3=复学
+  EDU_APPROVAL_STATUS = 'edu_approval_status', // 审批状态：0=草稿 / 1=审批中 / 2=通过 / 3=驳回
+  EDU_SEMESTER_TERM = 'edu_semester_term', // 学期：1=第一学期 / 2=第二学期
+  EDU_SEMESTER_STATUS = 'edu_semester_status', // 学期状态：0=未开始 / 1=进行中 / 2=已结束（由起止日期自动推导）
+  EDU_POLITICAL_STATUS = 'edu_political_status', // 政治面貌
+  EDU_EDUCATION_SYSTEM = 'edu_education_system', // 学制（已移除「三年制」）
+  EDU_SEMESTER_CALENDAR_TYPE = 'edu_semester_calendar_type', // 校历节点类型
+  EDU_CHANGE_LOG_ACTION = 'edu_change_log_action' // 变更日志操作类型：1=新增 / 2=修改 / 3=删除 / 4=学籍状态变更 / 5=调班 / 6=复学 / 7=导入
 }
