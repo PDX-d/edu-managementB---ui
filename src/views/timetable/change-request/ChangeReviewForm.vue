@@ -26,6 +26,7 @@
     <template #footer>
       <el-button
         :loading="formLoading"
+        :disabled="!canReviewChanges(action)"
         :type="action === 'approve' ? 'primary' : 'danger'"
         @click="submitForm"
       >
@@ -38,6 +39,7 @@
 <script lang="ts" setup>
 import * as ChangeRequestApi from '@/api/timetable/changeRequest'
 import type { TimetableId } from '@/api/timetable/types'
+import { canReviewChanges } from '../reference'
 
 defineOptions({ name: 'TimetableChangeReviewForm' })
 
@@ -55,6 +57,10 @@ const formRules = reactive({
 
 /** 打开弹窗 */
 const open = (type: 'approve' | 'reject', id: TimetableId) => {
+  if (!canReviewChanges(type)) {
+    message.warning('仅有对应审批权限的课表管理员可处理申请')
+    return
+  }
   dialogVisible.value = true
   action.value = type
   requestId.value = id
@@ -67,6 +73,10 @@ defineExpose({ open })
 const emit = defineEmits(['success', 'failed'])
 const submitForm = async () => {
   if (formLoading.value || !formRef.value) return
+  if (!canReviewChanges(action.value)) {
+    message.warning('当前账号无权审批该申请')
+    return
+  }
   if (!(await formRef.value.validate().catch(() => false))) return
   const text = action.value === 'approve' ? '通过' : '拒绝'
   try {

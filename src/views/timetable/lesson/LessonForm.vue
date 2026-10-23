@@ -76,6 +76,7 @@
 <script lang="ts" setup>
 import * as LessonApi from '@/api/timetable/lesson'
 import type { TimetableId } from '@/api/timetable/types'
+import { checkPermi } from '@/utils/permission'
 import {
   DATE_TIME_FORMAT,
   formatBizRange,
@@ -84,7 +85,12 @@ import {
   parseBizTime,
   toIdValue
 } from '../utils'
-import { checkLessonTime, semesterDisabledDate, useReferenceOptions } from '../reference'
+import {
+  canMaintainLessons,
+  checkLessonTime,
+  semesterDisabledDate,
+  useReferenceOptions
+} from '../reference'
 import LessonFields, { type LessonFieldsValue } from './components/LessonFields.vue'
 import ConflictResult from './components/ConflictResult.vue'
 
@@ -121,6 +127,13 @@ const dragHint = ref('')
 const semester = computed(() =>
   formData.value.semesterId ? semesterOf(formData.value.semesterId) : undefined
 )
+const authorize = (classIds?: TimetableId[]) => {
+  const allowed =
+    canMaintainLessons(options.value, false, classIds) &&
+    checkPermi([`timetable:lesson:${formType.value}`])
+  if (!allowed) message.warning('仅管理员和辅导员可维护所管班级课表；教师请申请调停课')
+  return allowed
+}
 
 type Callback = (error?: Error) => void
 const required = (label: string, trigger = 'change') => ({
@@ -213,11 +226,19 @@ const open = async (type: 'create' | 'update', id?: TimetableId, defaults?: Less
   try {
     if (type === 'create') {
       await loadOptions()
+      if (options.value && !authorize()) {
+        dialogVisible.value = false
+        return
+      }
       formData.value.semesterId =
         defaults?.semesterId || idKey(options.value?.currentSemesterId) || ''
       return
     }
     const [lesson] = await Promise.all([LessonApi.getLesson(id!), loadOptions()])
+    if (options.value && !authorize(lesson.classIds || [])) {
+      dialogVisible.value = false
+      return
+    }
     if (lesson.status !== 0) {
       message.warning('停课课次不能修改')
       dialogVisible.value = false
@@ -272,7 +293,10 @@ const runCheck = async (): Promise<LessonApi.ConflictVO[] | null> => {
 
 const validate = async () => {
   if (!options.value || !semester.value) return false
+  if (!authorize()) return false
   if (!formRef.value || !(await formRef.value.validate().catch(() => false))) return false
+  if (!authorize(formData.value.classIds)) return false
+  if (latest.value && !authorize(latest.value.classIds || [])) return false
   if (semester.value?.archived) {
     message.warning('所选学期已归档，只读')
     return false

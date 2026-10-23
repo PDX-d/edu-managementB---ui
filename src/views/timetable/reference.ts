@@ -6,7 +6,7 @@ import {
 } from '@/api/timetable/reference'
 import type { LessonVO } from '@/api/timetable/lesson'
 import type { TimetableDateRange, TimetableId } from '@/api/timetable/types'
-import { checkPermi } from '@/utils/permission'
+import { checkPermi, checkRole } from '@/utils/permission'
 import dayjs from 'dayjs'
 import { addDays, DATE_FORMAT, idKey, parseBizTime } from './utils'
 
@@ -77,6 +77,25 @@ export const semesterLabel = (semester: SemesterOption) =>
 
 export type RescheduleAction = 'update' | 'apply'
 
+export const canReviewChanges = (action: 'approve' | 'reject') =>
+  (checkRole(['super_admin']) || checkPermi(['timetable:admin'])) &&
+  checkPermi([`timetable:change-request:${action}`])
+
+export const canMaintainLessons = (
+  options: ReferenceOptions | null,
+  readonly: boolean,
+  classIds?: TimetableId[]
+): boolean => {
+  if (!options || readonly) return false
+  const actor = options.actor
+  if (actor.type === 'ADMIN') return true
+  if (actor.type !== 'COUNSELOR') return false
+  const managed = new Set((actor.classIds || []).map((id) => idKey(id)))
+  return classIds
+    ? classIds.length > 0 && classIds.every((id) => managed.has(idKey(id)))
+    : managed.size > 0
+}
+
 /**
  * 课次可执行的改期方式（用于拖拽及按钮入口的界面判断，最终以后端校验为准）
  * - 管理员：需 timetable:lesson:update
@@ -91,14 +110,8 @@ export const rescheduleAction = (
 ): RescheduleAction | null => {
   if (!options || readonly || lesson.status !== 0) return null
   const actor = options.actor
-  if (actor.type === 'ADMIN') {
+  if (canMaintainLessons(options, readonly, lesson.classIds || [])) {
     return checkPermi(['timetable:lesson:update']) ? 'update' : null
-  }
-  if (actor.type === 'COUNSELOR') {
-    const managed = new Set((actor.classIds || []).map((id) => idKey(id)))
-    const classIds = lesson.classIds || []
-    const all = classIds.length > 0 && classIds.every((id) => managed.has(idKey(id)))
-    return all && checkPermi(['timetable:lesson:update']) ? 'update' : null
   }
   if (actor.type === 'TEACHER') {
     const own = !!idKey(actor.teacherId) && idKey(actor.teacherId) === idKey(lesson.teacherId)

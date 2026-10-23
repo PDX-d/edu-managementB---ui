@@ -72,6 +72,7 @@
 </template>
 <script lang="ts" setup>
 import * as LessonApi from '@/api/timetable/lesson'
+import { checkPermi } from '@/utils/permission'
 import {
   DATE_FORMAT,
   diffDays,
@@ -81,7 +82,7 @@ import {
   toIdValue,
   WEEKDAY_LABELS
 } from '../utils'
-import { semesterDisabledDate, useReferenceOptions } from '../reference'
+import { canMaintainLessons, semesterDisabledDate, useReferenceOptions } from '../reference'
 import LessonFields, { type LessonFieldsValue } from './components/LessonFields.vue'
 
 defineOptions({ name: 'TimetableLessonBatchForm' })
@@ -173,6 +174,14 @@ const open = async (defaults?: { semesterId?: string }) => {
   formLoading.value = true
   try {
     await loadOptions()
+    if (
+      options.value &&
+      (!checkPermi(['timetable:lesson:create']) || !canMaintainLessons(options.value, false))
+    ) {
+      message.warning('仅管理员和辅导员可批量排课')
+      dialogVisible.value = false
+      return
+    }
     formData.value.semesterId =
       defaults?.semesterId || idKey(options.value?.currentSemesterId) || ''
   } finally {
@@ -198,6 +207,13 @@ const submitForm = async () => {
   if (!(await formRef.value.validate().catch(() => false))) return
   if (semester.value?.archived) {
     message.warning('所选学期已归档，只读')
+    return
+  }
+  if (
+    !checkPermi(['timetable:lesson:create']) ||
+    !canMaintainLessons(options.value, false, formData.value.classIds)
+  ) {
+    message.warning('当前身份或班级范围不允许批量排课')
     return
   }
   if (!previewDates.value.length) {

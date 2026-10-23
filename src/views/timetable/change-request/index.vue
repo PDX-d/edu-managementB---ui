@@ -81,6 +81,7 @@
           <el-button link type="primary" @click="detailRef.open(row.id)">详情</el-button>
           <template v-if="row.status === 0">
             <el-button
+              v-if="canReviewChanges('approve')"
               link
               type="success"
               @click="reviewRef.open('approve', row.id)"
@@ -89,6 +90,7 @@
               通过
             </el-button>
             <el-button
+              v-if="canReviewChanges('reject')"
               link
               type="danger"
               @click="reviewRef.open('reject', row.id)"
@@ -116,6 +118,7 @@
 </template>
 <script lang="ts" setup>
 import * as ChangeRequestApi from '@/api/timetable/changeRequest'
+import { canReviewChanges } from '../reference'
 import {
   CHANGE_STATUS_OPTIONS,
   CHANGE_TYPE_LABELS,

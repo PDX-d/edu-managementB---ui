@@ -55,7 +55,7 @@
           申请调停课
         </el-button>
         <el-button
-          v-if="!readonly"
+          v-if="canMaintainLessons(options, readonly, row.classIds || [])"
           link
           type="danger"
           @click="emit('delete', row)"
@@ -74,7 +74,7 @@ import * as LessonApi from '@/api/timetable/lesson'
 import type { TimetableDateRange } from '@/api/timetable/types'
 import type { ReferenceOptions } from '@/api/timetable/reference'
 import { formatBizRange } from '../utils'
-import { rescheduleAction } from '../reference'
+import { canMaintainLessons, rescheduleAction } from '../reference'
 
 defineOptions({ name: 'TimetableLessonTable' })
 

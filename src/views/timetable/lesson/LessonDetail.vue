@@ -48,7 +48,7 @@
           申请调停课
         </el-button>
         <el-button
-          v-if="!isReadonly"
+          v-if="canDelete"
           type="danger"
           @click="emitAndClose('delete')"
           v-hasPermi="['timetable:lesson:delete']"
@@ -64,8 +64,9 @@
 import * as LessonApi from '@/api/timetable/lesson'
 import type { TimetableId } from '@/api/timetable/types'
 import { findSemester, type ReferenceOptions } from '@/api/timetable/reference'
+import { checkPermi } from '@/utils/permission'
 import { formatBizRange } from '../utils'
-import { rescheduleAction } from '../reference'
+import { canMaintainLessons, rescheduleAction } from '../reference'
 
 defineOptions({ name: 'TimetableLessonDetail' })
 
@@ -87,6 +88,12 @@ const isReadonly = computed(
     !detail.value ||
     findSemester(props.options, detail.value.semesterId)?.archived !== false
 )
+const canDelete = computed(
+  () =>
+    !!detail.value &&
+    checkPermi(['timetable:lesson:delete']) &&
+    canMaintainLessons(props.options, isReadonly.value, detail.value.classIds || [])
+)
 
 /** 打开弹窗，每次获取最新详情 */
 const open = async (id: TimetableId) => {
@@ -106,6 +113,10 @@ defineExpose({ open })
 const emitAndClose = (action: 'edit' | 'apply' | 'delete') => {
   if (isReadonly.value || !detail.value) return
   const lesson = detail.value!
+  if (action === 'delete' && !canDelete.value) return
+  const reschedule = rescheduleAction(props.options, lesson, isReadonly.value)
+  if (action === 'edit' && reschedule !== 'update') return
+  if (action === 'apply' && reschedule !== 'apply') return
   dialogVisible.value = false
   if (action === 'edit') emit('edit', lesson)
   else if (action === 'apply') emit('apply', lesson)

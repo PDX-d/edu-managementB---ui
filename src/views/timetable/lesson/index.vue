@@ -89,7 +89,7 @@
         <el-button @click="handleQuery"><Icon icon="ep:search" class="mr-5px" /> 搜索</el-button>
         <el-button @click="resetQuery"><Icon icon="ep:refresh" class="mr-5px" /> 重置</el-button>
         <el-button
-          v-if="!readonly"
+          v-if="canMaintainLessons(options, readonly)"
           type="primary"
           plain
           @click="formRef.open('create', undefined, { semesterId: applied.semesterId })"
@@ -98,7 +98,7 @@
           <Icon icon="ep:plus" class="mr-5px" /> 新增
         </el-button>
         <el-button
-          v-if="!readonly"
+          v-if="canMaintainLessons(options, readonly)"
           type="primary"
           plain
           @click="batchFormRef.open({ semesterId: applied.semesterId })"
@@ -161,7 +161,9 @@
 <script lang="ts" setup>
 import * as LessonApi from '@/api/timetable/lesson'
 import type { TimetableDateRange } from '@/api/timetable/types'
+import { checkPermi } from '@/utils/permission'
 import {
+  canMaintainLessons,
   rescheduleAction,
   semesterDisabledDate,
   semesterLabel,
@@ -306,7 +308,17 @@ const refresh = () => {
 
 /** 删除课次；有待审批申请时后端会拒绝 */
 const handleDelete = async (lesson: LessonApi.LessonVO) => {
-  if (readonly.value || semesterOf(lesson.semesterId)?.archived) return
+  if (
+    !checkPermi(['timetable:lesson:delete']) ||
+    !canMaintainLessons(
+      options.value,
+      readonly.value || semesterOf(lesson.semesterId)?.archived !== false,
+      lesson.classIds || []
+    )
+  ) {
+    message.warning('当前身份或班级范围不允许删除该课次')
+    return
+  }
   try {
     await message.delConfirm(`确认删除课次“${lesson.courseName}”吗？`)
   } catch {
